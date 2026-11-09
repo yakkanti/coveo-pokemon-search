@@ -20,6 +20,7 @@ Create these **before** the sources, so the first build populates them.
 | `pokemon_species` | String | Free-text search | e.g. "Mouse Pokémon" |
 | `pokemon_summary` | String | Free-text search | **New:** intro text, replaces the stats-boilerplate excerpt |
 | `pokemon_hp`, `pokemon_attack`, `pokemon_defense`, `pokemon_spatk`, `pokemon_spdef`, `pokemon_speed` | Integer 32 | Sortable | **New, optional:** base stats for the detail page |
+| `pokemon_weak_to`, `pokemon_resists`, `pokemon_immune_to` | String | **Facet + Multi-value facet** | Attacking types from the type chart, e.g. Gyarados is weak to `Electric; Rock`. Cleaned by the extension (§4a) |
 
 A field's type can't be changed later. Delete and recreate the field if a type is wrong.
 
@@ -76,7 +77,10 @@ and stats tables, because Mega and alternate forms repeat those tables in other 
   "pokemon_defense":    { "type": "XPATH", "path": "(//h2[text()='Base stats'])[1]/following::table[1]//tr[th='Defense']/td[contains(@class,'cell-num')][1]/text()" },
   "pokemon_spatk":      { "type": "XPATH", "path": "(//h2[text()='Base stats'])[1]/following::table[1]//tr[th='Sp. Atk']/td[contains(@class,'cell-num')][1]/text()" },
   "pokemon_spdef":      { "type": "XPATH", "path": "(//h2[text()='Base stats'])[1]/following::table[1]//tr[th='Sp. Def']/td[contains(@class,'cell-num')][1]/text()" },
-  "pokemon_speed":      { "type": "XPATH", "path": "(//h2[text()='Base stats'])[1]/following::table[1]//tr[th='Speed']/td[contains(@class,'cell-num')][1]/text()" }
+  "pokemon_speed":      { "type": "XPATH", "path": "(//h2[text()='Base stats'])[1]/following::table[1]//tr[th='Speed']/td[contains(@class,'cell-num')][1]/text()" },
+  "pokemon_weak_to":    { "type": "XPATH", "path": "(//h2[text()='Type defenses'])[1]/following-sibling::div[contains(@class,'resp-scroll')][1]//td[contains(@title,'= super-effective')]/@title" },
+  "pokemon_resists":    { "type": "XPATH", "path": "(//h2[text()='Type defenses'])[1]/following-sibling::div[contains(@class,'resp-scroll')][1]//td[contains(@title,'= not very effective')]/@title" },
+  "pokemon_immune_to":  { "type": "XPATH", "path": "(//h2[text()='Type defenses'])[1]/following-sibling::div[contains(@class,'resp-scroll')][1]//td[contains(@title,'= no effect')]/@title" }
 }
 ```
 
@@ -84,6 +88,10 @@ Known pitfalls:
 - **`№` character:** the page writes it as `&#8470;`, and an exact match on `th='National №'` failed in Coveo. The
   `starts-with(normalize-space(th),'National')` selector avoids that character.
 - **Type icons:** they also appear in the type-defenses chart. The vitals-table scoping prevents bogus types.
+- **Type chart as text is unreadable.** The type-defenses table uses abbreviated headers and symbols, so it indexes
+  as `NorFirWatEle… ½½4½0` and RGA guesses wrong (it said Gyarados is weak to Dragon, Fairy and Ice). The real
+  meaning is in each cell's tooltip (`Electric → Water/Flying = super-effective`), which the three `pokemon_weak_to`,
+  `pokemon_resists` and `pokemon_immune_to` selectors read. They're scoped to the first chart, the base form.
 - **`pokemon_summary` is stored as HTML.** The selector returns `<p>` elements, and Coveo joins them with `;`.
   The extension in §4a turns it into plain text.
 
@@ -91,22 +99,29 @@ Known pitfalls:
 
 Add this `exclude` list next to `metadata` in the same scraping configuration entry. Without it, "pikachu" and
 "eevee" match about 810 pages: the site menu links to "Let's Go Pikachu & Let's Go Eevee" on every page, and every
-"Where to find" table has rows for those games. The move tables also add noise to excerpts and generated answers.
+"Where to find" table has rows for those games. The move tables and neighbor links also add noise to excerpts,
+ranking and generated answers.
 
 ```json
 "exclude": [
-  { "type": "CSS", "path": "header.main-header" },
-  { "type": "CSS", "path": "nav.main-menu" },
-  { "type": "CSS", "path": "footer" },
-  { "type": "CSS", "path": "#dex-moves" },
-  { "type": "CSS", "path": "#dex-locations" },
-  { "type": "CSS", "path": "#dex-sprites" },
-  { "type": "CSS", "path": "#dex-lang" }
+  { "type": "CSS",   "path": "header" },
+  { "type": "CSS",   "path": "nav" },
+  { "type": "CSS",   "path": "footer" },
+  { "type": "CSS",   "path": "a.sr-only" },
+  { "type": "CSS",   "path": "ul.list-nav" },
+  { "type": "XPATH", "path": "//main/*[preceding-sibling::div[@id='dex-moves']]" }
 ]
 ```
 
-Keep `#dex-basics` and `#dex-stats`, which the field selectors read from, and the evolution chart and Pokédex
-entries, which are good material for generated answers.
+- `nav` also removes the previous/next Pokémon links at the top and bottom of each page.
+- `a.sr-only` (the "Skip to main content" link) and `ul.list-nav` (the Contents list) otherwise open every
+  Passage Retrieval passage, wasting passage space on page chrome.
+- **The `#dex-*` ids are empty anchors** (`<div id="dex-moves"></div>`), not containers, so excluding them by CSS
+  removes nothing. The page sections are flat siblings under `<main>`. The XPath rule removes every sibling after
+  the moves anchor: moves, sprites, locations, the Q&A box and other languages.
+- What stays: the intro, Pokédex data, base stats, type defenses, evolution chart, changes and Pokédex entries. All
+  the field selectors read from those sections. Gen 1 pages still mention Let's Go Pikachu/Eevee in their Pokédex
+  data and entries, which is genuine.
 
 ## 4a. Indexing pipeline extension: clean `pokemon_summary`
 

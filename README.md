@@ -3,7 +3,7 @@
 Every Pokémon page on [pokemondb.net](https://pokemondb.net) crawled into a Coveo
 organization, and searched from a **Next.js 16 + Coveo Headless** app.
 
-**Live demo:** _coming soon_
+**Live demo:** https://reddy-pokemon-search.vercel.app
 
 | Requirement | Where |
 |---|---|
@@ -15,6 +15,7 @@ organization, and searched from a **Next.js 16 + Coveo Headless** app.
 | Pokémon detail page (server-rendered Search API query on `@uri`) | `src/app/pokemon/[slug]/page.tsx` |
 | Shareable URLs (query and facets in the hash) | `buildUrlManager` in `src/components/search-page.tsx` |
 | Clean summary text at indexing time | Indexing pipeline extension, [`docs/ipe/`](docs/ipe/) |
+| **Bonus:** "Ask about this Pokémon" with the Passage Retrieval API + Claude | `src/app/api/ask/route.ts`, `src/components/ask-pokemon.tsx` |
 
 ## How it works
 
@@ -29,6 +30,22 @@ organization, and searched from a **Next.js 16 + Coveo Headless** app.
 - **App.** The search page is a client component built from Headless controllers (search box, facets, result list,
   generated answer, pager, URL manager). The detail page is a server component: one cached Search API query per
   Pokémon, streamed in with Suspense.
+
+## Ask about this Pokémon (bonus)
+
+Each detail page has a question box. The server route (`/api/ask`) does the retrieval with Coveo and the writing
+with Claude:
+
+1. **Passage Retrieval API** (`/rest/search/v3/passages/retrieve`) with `filter: @uri=="<this Pokémon's page>"`,
+   so passages come only from this Pokémon's page, under the same `PokemonSearch` hub and pipeline as search.
+2. **A Pokédex record** built from the index fields: types, type matchups (`pokemon_weak_to`, `pokemon_resists`,
+   `pokemon_immune_to`), base stats and summary. Exact data beats the type chart's abbreviations.
+3. **Claude** (`claude-opus-5-5`, low effort) answers from only those documents, with citations on, and the answer
+   streams to the page with the sources it cited. Server-side refusal fallback is on (`fallbacks: "default"`).
+
+This is the bring-your-own-LLM pattern: Coveo stays the retrieval and permissions layer, the customer picks the
+model. The Anthropic key is server-only (`ANTHROPIC_API_KEY`, no `NEXT_PUBLIC_` prefix). The route caps question
+length and rate-limits bursts per IP.
 
 ## Run it
 

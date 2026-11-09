@@ -7,13 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "seed-traffic": "node scripts/seed-traffic.mjs",
+    "compare-semantic": "node scripts/compare-semantic.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@coveo/headless": "^3.58.1",
     "next": "16.4.5",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -21,6 +25,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "playwright-core": "^1.65.0",
     "typescript": "^5"
   }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import {
+  buildContext,
   buildFacet,
   buildGeneratedAnswer,
   buildPager,
@@ -21,8 +22,13 @@ import { Pager, QuerySummary } from "./pager";
 export function SearchPage() {
   const c = useMemo(() => {
     const engine = buildSearchEngine({ configuration: searchEngineConfiguration() });
+    // Relevance testing: ?semantic=off sends context { semantic: "off" }, which the PokemonSearch pipeline uses to
+    // skip the Semantic Encoder (keyword-only retrieval). Any other value, or none, keeps hybrid retrieval.
+    const semanticParam = new URLSearchParams(window.location.search).get("semantic");
+    if (semanticParam === "off") buildContext(engine).add("semantic", "off");
     return {
       engine,
+      semanticParam,
       searchBox: buildSearchBox(engine, { options: { numberOfSuggestions: 6, highlightOptions: {} } }),
       types: buildFacet(engine, {
         options: { field: fields.types, numberOfValues: 18, sortCriteria: "occurrences" },
@@ -31,7 +37,10 @@ export function SearchPage() {
         options: { field: fields.generation, numberOfValues: 9, sortCriteria: "alphanumeric" },
       }),
       results: buildResultList(engine, { options: { fieldsToInclude } }),
-      answer: buildGeneratedAnswer(engine, { fieldsToIncludeInCitations: fieldsToInclude }),
+      answer: buildGeneratedAnswer(engine, {
+        fieldsToIncludeInCitations: fieldsToInclude,
+        initialState: { responseFormat: { contentFormat: ["text/markdown", "text/plain"] } },
+      }),
       summary: buildQuerySummary(engine),
       pager: buildPager(engine),
     };
@@ -69,6 +78,7 @@ export function SearchPage() {
           <code>NEXT_PUBLIC_COVEO_API_KEY</code> to search the Pokémon index.
         </p>
       )}
+      {c.semanticParam !== null && <RetrievalMode off={c.semanticParam === "off"} />}
       <SearchBox controller={c.searchBox} />
       <div className="columns">
         <aside className="facets">
@@ -83,5 +93,23 @@ export function SearchPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+// Shown only when the URL has ?semantic=…, so regular visitors never see it. Switching reloads the page, because the
+// context is set when the engine is built; the hash keeps the current query and facets.
+function RetrievalMode({ off }: { off: boolean }) {
+  const switchTo = (value: "on" | "off") => {
+    // A full reload is intentional: the engine (and its context) is built once per page load.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = `${window.location.pathname}?semantic=${value}${window.location.hash}`;
+  };
+  return (
+    <p className={off ? "retrieval-mode off" : "retrieval-mode"}>
+      Retrieval: <b>{off ? "keyword only (Semantic Encoder off)" : "hybrid (keywords + Semantic Encoder)"}</b>
+      <button type="button" onClick={() => switchTo(off ? "on" : "off")}>
+        Switch to {off ? "hybrid" : "keyword only"}
+      </button>
+    </p>
   );
 }

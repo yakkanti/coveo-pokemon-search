@@ -1,53 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cacheLife } from "next/cache";
 import { Suspense } from "react";
 import { Banner } from "@/components/banner";
-import {
-  fields,
-  fieldsToInclude,
-  isSampleOrg,
-  plainText,
-  searchApiUrl,
-  searchEngineConfiguration,
-  searchHub,
-} from "@/lib/coveo-config";
-
-interface SearchApiResult {
-  title: string;
-  clickUri: string;
-  excerpt: string;
-  raw: Record<string, unknown>;
-}
-
-// One Pokémon is one indexed page, so the detail page is a single Search API query on @uri,
-// rendered on the server and cached: the index only changes when the source rebuilds.
-async function getPokemon(slug: string): Promise<SearchApiResult | null> {
-  "use cache";
-  cacheLife("hours");
-  if (isSampleOrg || !/^[a-z0-9-]+$/.test(slug)) return null;
-  const { accessToken } = searchEngineConfiguration();
-  const res = await fetch(searchApiUrl(), {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      aq: `@uri=="https://pokemondb.net/pokedex/${slug}"`,
-      numberOfResults: 1,
-      fieldsToInclude,
-      searchHub,
-    }),
-  });
-  if (!res.ok) throw new Error(`Coveo Search API ${res.status}`);
-  const data = (await res.json()) as { results: SearchApiResult[] };
-  return data.results[0] ?? null;
-}
-
-function values(result: SearchApiResult, field: string): string[] {
-  const raw = field ? result.raw[field] : undefined;
-  if (Array.isArray(raw)) return raw.map(String);
-  return raw == null ? [] : [String(raw)];
-}
+import { AskPokemon } from "@/components/ask-pokemon";
+import { fields, isSampleOrg, plainText } from "@/lib/coveo-config";
+import { getPokemon, values } from "@/lib/pokemon";
 
 export async function generateMetadata(props: PageProps<"/pokemon/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
@@ -112,6 +70,7 @@ async function PokemonDetail({ params }: { params: Promise<{ slug: string }> }) 
       <p className="source">
         Source: <a href={pokemon.clickUri} target="_blank" rel="noreferrer">{pokemon.clickUri}</a>
       </p>
+      <AskPokemon slug={slug} name={name} />
     </>
   );
 }
