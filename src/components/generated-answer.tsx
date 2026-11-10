@@ -6,6 +6,7 @@ import type { GeneratedAnswer as GeneratedAnswerController, GeneratedAnswerCitat
 import { useControllerState } from "@/lib/use-controller";
 import { fields, plainText, pokemonSlug } from "@/lib/coveo-config";
 import { tidyAnswer } from "@/lib/tidy-answer";
+import { bestCitedSnippet } from "@/lib/cited-snippet";
 
 // The description shown for a cited Pokémon: the first paragraph of pokemon_summary, which citations carry
 // because the controller requests fieldsToIncludeInCitations.
@@ -28,16 +29,20 @@ export function GeneratedAnswer({ controller }: { controller: GeneratedAnswerCon
   const state = useControllerState(controller);
   if (!state.isVisible || (!state.answer && !state.isLoading)) return null;
 
-  // One entry per cited Pokémon (RGA can cite several chunks of the same page).
-  const seen = new Set<string>();
-  const cited = state.citations.filter((c) => {
+  // One entry per cited Pokémon. RGA can cite several chunks of the same page, so keep all of each page's chunks
+  // to find the cited portion in.
+  const groups = new Map<string, { first: GeneratedAnswerCitation; chunks: string[] }>();
+  for (const c of state.citations) {
     const key = pokemonSlug(c.clickUri ?? c.uri) ?? c.uri;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  const pokemon = cited.filter((c) => pokemonSlug(c.clickUri ?? c.uri));
-  const otherSources = cited.filter((c) => !pokemonSlug(c.clickUri ?? c.uri));
+    const group = groups.get(key) ?? { first: c, chunks: [] };
+    if (c.text) group.chunks.push(c.text);
+    groups.set(key, group);
+  }
+  const cited = [...groups.values()];
+  const pokemon = cited.filter((g) => pokemonSlug(g.first.clickUri ?? g.first.uri));
+  const otherSources = cited.filter((g) => !pokemonSlug(g.first.clickUri ?? g.first.uri)).map((g) => g.first);
+  // Only quote once the answer has finished streaming, so the quote doesn't flicker while text arrives.
+  const answerText = state.isStreaming ? "" : tidyAnswer(state.answer ?? "");
 
   return (
     // Fixed height (50% of the viewport): the header stays put, the answer and descriptions scroll below it.
@@ -68,15 +73,35 @@ export function GeneratedAnswer({ controller }: { controller: GeneratedAnswerCon
 
         {pokemon.length > 0 && (
           <ul className="answer-pokemon" aria-label="Pokémon in this answer">
-            {pokemon.map((c) => (
-              <li key={c.id}>
-                {/* The name opens the app's detail page and counts as a citation click. */}
-                <Link href={`/pokemon/${pokemonSlug(c.clickUri ?? c.uri)}`} onClick={() => controller.logCitationClick(c.id)}>
-                  {pokemonName(c)}
-                </Link>
-                {description(c) && <p>{description(c)}</p>}
-              </li>
-            ))}
+            {pokemon.map(({ first: c, chunks }) => {
+              const desc = description(c);
+              const snippet = answerText ? bestCitedSnippet(chunks, answerText) : "";
+              // Skip a quote that only repeats the description shown right above it.
+              const same = (t: string) => t.replace(/[…"“”.]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+              const quote = snippet && !same(desc).includes(same(snippet)) ? snippet : "";
+              return (
+                <li key={c.id}>
+                  {/* The name opens the app's detail page and counts as a citation click. */}
+                  <Link href={`/pokemon/${pokemonSlug(c.clickUri ?? c.uri)}`} onClick={() => controller.logCitationClick(c.id)}>
+                    {pokemonName(c)}
+                  </Link>
+                  {desc && <p>{desc}</p>}
+                  {quote && (
+                    <blockquote className="cited">
+                      <span className="cited-label">Cited</span> “{quote}”
+                    </blockquote>
+                  )}
+                  {chunks.length > 0 && (
+                    <details className="cited-passage">
+                      <summary>Show the passage RGA used{chunks.length > 1 ? `s (${chunks.length})` : ""}</summary>
+                      {chunks.map((chunk, i) => (
+                        <p key={i}>{chunk}</p>
+                      ))}
+                    </details>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

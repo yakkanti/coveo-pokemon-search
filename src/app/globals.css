@@ -284,3 +284,10 @@ button {
 .answer-pokemon li + li { margin-top: 12px; }
 .answer-pokemon a { color: var(--accent); font-weight: 600; }
 .answer-pokemon p { margin-top: 2px; line-height: 1.5; color: var(--muted); }
+
+/* The portion of RGA's cited chunk that matches the answer, and the full chunk on demand */
+.answer-pokemon .cited { margin: 6px 0 0; padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--tint, #f4f6f9); border-radius: 0 6px 6px 0; font-size: 0.88rem; line-height: 1.5; }
+.answer-pokemon .cited-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-right: 4px; }
+.answer-pokemon .cited-passage { margin-top: 4px; font-size: 0.8rem; color: var(--muted); }
+.answer-pokemon .cited-passage summary { cursor: pointer; }
+.answer-pokemon .cited-passage p { margin-top: 6px; white-space: pre-line; }
