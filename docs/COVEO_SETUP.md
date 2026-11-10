@@ -1,9 +1,10 @@
 # Coveo org setup runbook
 
-Everything needed to stand up the Pokémon index in a fresh Coveo organization, in order. It includes the fixes found
-while building the first (trial) org, so a new org should take one pass.
+Everything needed to stand up the Pokémon index in a fresh Coveo organization, in order: fields, sources, scraping
+configuration, extension, query pipeline, machine learning models and the API key. It includes the fixes found while
+building it, so a new org should take one pass.
 
-Allow about 1 hour of console work plus about 40 minutes for the full crawl.
+Allow about 1 hour of console work, about 40 minutes for the full crawl, and about 1 hour for the models to build.
 
 ## 1. Fields (Content → Fields → Add field)
 
@@ -54,7 +55,8 @@ extension. Then change the settings below.
 6. **Time the crawler waits between requests:** `2000` ms, which matches the robots.txt `Crawl-delay: 2`.
 7. The same scraping configuration (§4), mappings (including `title` → `%[pokemon_name]`) and extension (§4a) as
    the test source. Check all three: a source created from scratch has none of them.
-8. Rebuild. Expect **1,026 items**: 1,025 Pokémon plus the national page.
+8. Rebuild. Expect **1,026 items**: 1,025 Pokémon plus the national page. The pipeline filter (§5) hides the national
+   page from results, and the model dataset filter (§5a) keeps it out of the models, so both work with 1,025.
 
 When you're done testing, **delete `pokemon-single`**, otherwise Charizard shows up twice.
 
@@ -123,12 +125,14 @@ ranking and generated answers.
   the field selectors read from those sections. Gen 1 pages still mention Let's Go Pikachu/Eevee in their Pokédex
   data and entries, which is genuine.
 
-## 4a. Indexing pipeline extension: clean `pokemon_summary`
+## 4a. Indexing pipeline extension: clean `pokemon_summary` and the type matchups
 
 The script is [`docs/ipe/clean_pokemon_summary.py`](ipe/clean_pokemon_summary.py). It runs on each item at
 indexing time, strips the tags from `pokemon_summary` with BeautifulSoup (available in Coveo's extension runtime),
-and writes plain text back, with one blank line between paragraphs. Cleaning it once at ingestion means the UI,
-RGA citations and any Passage Retrieval client all get the same clean text.
+and writes plain text back, with one blank line between paragraphs. It also trims the type-chart tooltips in
+`pokemon_weak_to`, `pokemon_resists` and `pokemon_immune_to` (`Electric → Water/Flying = super-effective`) down to the
+attacking type (`Electric`). Cleaning once at ingestion means the UI, RGA citations and any Passage Retrieval client
+all get the same clean text.
 
 1. **Content → Extensions → Add extension.** Name: `clean-pokemon-summary`. Paste the script and save.
 2. **Content → Sources →** each Pokémon source → **More → Manage extensions** (the label may read "Edit
@@ -137,7 +141,8 @@ RGA citations and any Passage Retrieval client all get the same clean text.
      goes straight into the `pokemon_summary` field, which has the same name.
 3. **Rebuild** the source. Extensions only run when items are indexed.
 4. **Check:** in the Content Browser, Charizard's `pokemon_summary` should start "Charizard is a Fire/Flying type
-   Pokémon…" with no tags. For each item, the Log Browser shows `pokemon_summary: cleaned 2 paragraph(s)`. The
+   Pokémon…" with no tags, and Gyarados' `pokemon_weak_to` should be `Electric; Rock`. For each item, the Log Browser
+   shows `pokemon_summary: cleaned 2 paragraph(s)`. The
    extension's **Usage statistics** show executions and errors.
 
 Local test, run before pasting into Coveo (a stand-in `document` object, the real Charizard markup):
@@ -154,7 +159,33 @@ Search → Query Pipelines → **Add pipeline** `PokemonSearch`.
 1. **Condition:** Search hub is `PokemonSearch`. The app sends this search hub on every query.
 2. **Filter rule:** Query parameter **cq (constant query)**, **Advanced mode**, expression `@pokemon_generation`.
    This keeps only Pokémon pages, which drops the national list page. Basic mode can't express "field has any value".
-3. Later: associate the Query Suggestions and RGA models with this pipeline.
+3. **Models:** associate the Query Suggestions, Semantic Encoder, RGA and Passage Retrieval models with this pipeline
+   (§5a).
+
+## 5a. Machine learning models
+
+Machine Learning → Models → **Add model**, then associate each one with the `PokemonSearch` pipeline (pipeline →
+Machine Learning tab → Associate model).
+
+| Model | Name | Learns from | Association condition |
+|---|---|---|---|
+| Query Suggestions | `pokemon-qs` | Usage analytics (searches, clicks) | Search Hub is PokemonSearch |
+| Semantic Encoder | `pokemon-se` | Source `pokemon-all` | Search Hub is PokemonSearch **AND** Context `semantic` is not `off` |
+| Relevance Generative Answering | `pokemon-rga` | Source `pokemon-all` | Search Hub is PokemonSearch |
+| Passage Retrieval (CPR) | `pokemon-cpr` | Source `pokemon-all` | Search Hub is PokemonSearch |
+
+- **Dataset filter** on the three content models (Semantic Encoder, RGA, Passage Retrieval): Configuration → Learn
+  from → **Add filter**, `@pokemon_generation`, then **Apply**. The data volume preview should drop from 1,026 to
+  **1,025** candidates, so the national list page never reaches answers or passages.
+- **Semantic Encoder condition:** the second condition lets a single request turn hybrid retrieval off by sending
+  `context: { "semantic": "off" }`. Normal traffic doesn't send it, so it keeps the encoder. The app exposes this as
+  `?semantic=off`, and `npm run compare-semantic` measures both modes (§8).
+- **Query Suggestions** learns only from real searches, so a new org has 0 candidates and the status shows
+  "Limited". Seed it with `npm run seed-traffic -- --visitors 60` (scripted visits to the live site, clearly
+  labeled), wait for the analytics to process, then rebuild the model.
+- **RGA** needs Headless in `analyticsMode: "legacy"`, which the app already sets.
+- **Rebuilding:** there's no schedule setting on the content models. Open the model → Configuration → change
+  something (the dataset filter is a good one) → **Save** starts a build. Avoid rebuilding right before a demo.
 
 ## 6. Verify
 
@@ -164,7 +195,17 @@ Search → Query Pipelines → **Add pipeline** `PokemonSearch`.
   ```bash
   curl -s "https://$ORG_ID.org.coveo.com/rest/search/v2" -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" -d '{"q":"","searchHub":"PokemonSearch","numberOfResults":0,"facets":[{"field":"pokemon_type","type":"specific","numberOfValues":20}]}'
   ```
-  Expect `totalCount` 1025 once the pipeline filter is on, and 18 type values.
+  Expect `totalCount` 1025 once the pipeline filter is on, and 18 type values. The request must be a POST with
+  `Content-Type: application/json`; sent any other way, Coveo ignores the body and returns all 1,025 items.
+- **Query Suggestions:** `POST …/rest/search/v2/querySuggest` with `{"q":"char","searchHub":"PokemonSearch"}`
+  should suggest charizard and charmander once the model has candidates.
+- **Semantic Encoder:** `{"q":"giant sea serpent"}` returns about 31 results with Gyarados first; adding
+  `"context":{"semantic":"off"}` returns none.
+- **RGA:** in the app, "What does Charmander evolve into?" answers "Charmeleon at Level 16", with Charmander and
+  Charmeleon cited.
+- **Passage Retrieval:** `POST …/rest/search/v3/passages/retrieve` with `query`, `searchHub`, `maxPassages` and the
+  required `localization` (`{"locale":"en-US","timezone":"UTC"}`). Add `"filter": "@uri==\"https://pokemondb.net/pokedex/gyarados\""`
+  to scope passages to one Pokémon. Passages should start with the Pokémon's intro, not the site header.
 
 ## 7. API key and app
 
@@ -179,8 +220,18 @@ Search → Query Pipelines → **Add pipeline** `PokemonSearch`.
    ```
 3. Restart `npm run dev`. No code changes are needed.
 
-## 8. After the switch
+## 8. After changing the source or scraping configuration
 
-- Email Will Tseng the new Org ID so Passage Retrieval can be enabled (Bonus).
-- Next: the Query Suggestions model, the RGA model, then detail-page work (summary, similar Pokémon, "Ask about this
-  Pokémon").
+Models keep the content they were built from. After any change to the scraping configuration, exclusions or the
+extension, the RGA chunks and Passage Retrieval passages stay stale (for example, still containing "Skip to main
+content") until the models are rebuilt.
+
+1. **Rebuild the source** and wait until it's idle.
+2. **Rebuild the content models**, in this order: Semantic Encoder, then RGA and Passage Retrieval. Query
+   Suggestions doesn't need it; it learns from searches, not page content.
+3. **Check relevance:** `npm run compare-semantic` runs 17 test queries with the Semantic Encoder on and off and
+   prints the mean reciprocal rank by query kind. The last run gave 0.83 with the encoder and 0.57 without.
+4. **Check the answers:** rerun the RGA and Ask questions from §6.
+
+For the deployed app, `ANTHROPIC_API_KEY` must also be set in the hosting environment (server-only, no
+`NEXT_PUBLIC_` prefix) for the "Ask about this Pokémon" feature.
