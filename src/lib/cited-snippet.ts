@@ -49,9 +49,11 @@ export function citedSnippet(chunk: string, answer: string): string {
 // so a "sentence" can start with clutter. Keep the window of words with the most matches, starting at the
 // first matching word, and mark trimmed ends with "…".
 const WINDOW = 32;
+// Chunks start with the page heading glued to the first sentence ("Litten Litten is a Fire type…").
+const dedupeHeading = (text: string) => text.replace(/^(\S+)\s+\1\b/, "$1");
 function focus(text: string, target: Set<string>): string {
   const tokens = text.split(" ");
-  if (tokens.length <= WINDOW && words(tokens[0]).some((w) => target.has(w))) return text;
+  if (tokens.length <= WINDOW && words(tokens[0]).some((w) => target.has(w))) return dedupeHeading(text);
   const hitWords = tokens.map((t) => words(t).filter((w) => target.has(w)));
   // Most distinct matching words wins; on a tie, the tighter window (less clutter between matches) wins.
   let bestStart = 0;
@@ -70,7 +72,7 @@ function focus(text: string, target: Set<string>): string {
   let end = Math.min(bestStart + bestSpan + 1 + 6, tokens.length);
   const sentenceEnd = tokens.findIndex((t, i) => i >= end - 1 && /[.!?]$/.test(t));
   if (sentenceEnd !== -1 && sentenceEnd - end < 8) end = sentenceEnd + 1;
-  const quote = tokens.slice(bestStart, end).join(" ");
+  const quote = dedupeHeading(tokens.slice(bestStart, end).join(" "));
   return `${bestStart > 0 ? "…" : ""}${quote}${end < tokens.length && !/[.!?]$/.test(quote) ? "…" : ""}`;
 }
 
