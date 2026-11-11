@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tall Grass · Follow-up storyboard</title>
+<style>
+  :root { --fg:#171717; --muted:#6b6b6b; --border:#e3e3e3; --surface:#f7f7f8; --accent:#2f5bd3; --tint:#f4f6f9; --fire:#e8743b; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--fg); background:#fff; -webkit-font-smoothing:antialiased; }
+  .banner { position:relative; height:196px; background:linear-gradient(180deg,#0f1f3d 0%,#16325a 55%,#2a5a3a 100%); color:#fff; overflow:hidden; }
+  .banner .inner { max-width:1340px; margin:0 auto; padding:22px 40px 0; }
+  .kicker { color:#f5c84b; font-weight:700; letter-spacing:.14em; font-size:.8rem; }
+  .banner h1 { font-size:2.6rem; letter-spacing:-.02em; margin-top:2px; }
+  .banner p { margin-top:6px; opacity:.9; }
+  .pills { display:flex; gap:8px; margin-top:12px; }
+  .pill { padding:5px 12px; border-radius:999px; background:rgba(255,255,255,.14); font-size:.85rem; }
+  .pill b { font-weight:700; }
+  .pill.coveo { background:transparent; border:1px solid #f5c84b; } .pill.coveo b { color:#f5c84b; }
+  .orb { position:absolute; border-radius:50%; }
+  .grass { position:absolute; bottom:-1px; left:0; width:100%; height:40px; }
+  .wrap { max-width:1340px; margin:0 auto; padding:22px 40px 40px; }
+  .search { display:flex; gap:10px; }
+  .search input { flex:1; font:inherit; font-size:1.05rem; padding:13px 16px; border:1px solid var(--border); border-radius:8px; }
+  .search button { font:inherit; font-size:1.05rem; padding:0 22px; border:0; border-radius:8px; background:var(--accent); color:#fff; }
+  .layout { display:grid; grid-template-columns:240px 1fr; gap:36px; margin-top:22px; }
+  .facet h3 { font-size:1rem; margin-bottom:10px; }
+  .facet li { list-style:none; display:flex; align-items:center; gap:10px; padding:5px 0; font-size:.95rem; }
+  .facet li span:last-child { margin-left:auto; color:var(--muted); font-size:.88rem; }
+  .box { width:15px; height:15px; border:1.5px solid #8a8a8a; border-radius:3px; }
+  .answer { border:1.5px solid var(--accent); border-radius:12px; padding:18px 20px 16px; }
+  .answer-header { display:flex; align-items:center; gap:10px; }
+  .answer-header h2 { font-size:.98rem; }
+  .tag { font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7a5b00; background:#fff3cf; border:1px solid #f1d78a; padding:2px 7px; border-radius:999px; }
+  .answer-header .fb { margin-left:auto; display:flex; gap:8px; }
+  .fb span { font-size:.82rem; border:1px solid var(--border); border-radius:6px; padding:4px 10px; }
+  .turn + .turn { margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+  .q { display:flex; justify-content:flex-end; }
+  .q span { background:var(--accent); color:#fff; padding:8px 14px; border-radius:16px 16px 4px 16px; font-size:.95rem; }
+  .searched { margin-top:10px; font-size:.78rem; color:var(--muted); display:flex; align-items:center; gap:6px; }
+  .searched code { font-family:inherit; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:1px 7px; color:#333; }
+  .a { margin-top:8px; line-height:1.55; font-size:1rem; }
+  .starters { display:grid; grid-template-columns:repeat(9,1fr); gap:8px; margin-top:12px; }
+  .starter { text-align:center; border:1px solid var(--border); border-radius:10px; padding:6px 4px 8px; font-size:.78rem; }
+  .starter img { width:100%; max-width:68px; aspect-ratio:1; object-fit:contain; }
+  .starter b { display:block; color:var(--accent); font-size:.8rem; }
+  .starter small { color:var(--muted); }
+  .starter.hi { border-color:var(--fire); background:#fff6f0; }
+  .speed { margin-top:3px; height:5px; border-radius:3px; background:#eee; overflow:hidden; }
+  .speed i { display:block; height:100%; background:var(--fire); }
+  .cites { list-style:none; margin-top:12px; }
+  .cites li { display:flex; gap:12px; align-items:flex-start; }
+  .cites li + li { margin-top:10px; }
+  .cites img { width:48px; height:48px; object-fit:contain; border:1px solid var(--border); border-radius:8px; flex:none; }
+  .cites a { color:var(--accent); font-weight:600; }
+  .cites p { color:var(--muted); font-size:.9rem; line-height:1.45; margin-top:1px; }
+  .cited { margin-top:5px; padding:5px 10px; border-left:3px solid var(--accent); background:var(--tint); border-radius:0 6px 6px 0; font-size:.84rem; line-height:1.45; color:#333; }
+  .cited b { font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-right:4px; }
+  .evo { display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .evo .mon { text-align:center; border:1px solid var(--border); border-radius:10px; padding:6px 10px; font-size:.8rem; }
+  .evo img { width:74px; height:74px; object-fit:contain; display:block; margin:0 auto; }
+  .evo .mon b { color:var(--accent); display:block; }
+  .evo .arrow { color:var(--muted); font-size:.78rem; text-align:center; }
+  .evo .arrow div { font-size:1.2rem; }
+  .ask { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chips span { font-size:.82rem; border:1px solid var(--border); border-radius:999px; padding:5px 11px; color:#333; background:var(--surface); }
+  .ask-row { display:flex; gap:8px; margin-top:10px; }
+  .ask-row input { flex:1; font:inherit; font-size:.95rem; padding:10px 14px; border:1px solid var(--border); border-radius:8px; color:var(--muted); }
+  .ask-row button { font:inherit; font-size:.92rem; padding:0 16px; border:0; border-radius:8px; background:var(--accent); color:#fff; }
+  .meta { margin-top:8px; font-size:.75rem; color:var(--muted); display:flex; justify-content:space-between; }
+  .typing { display:inline-flex; gap:4px; margin-top:10px; }
+  .typing i { width:7px; height:7px; border-radius:50%; background:#bbb; }
+  [data-turn] { display:none; }
+
+  /* Storyboard */
+  .chips span { cursor:pointer; transition:background .15s, border-color .15s; }
+  .chips span:hover { border-color:var(--accent); background:#eef2fd; }
+  .chips span.next { border-color:var(--accent); color:var(--accent); background:#eef2fd; box-shadow:0 0 0 0 rgba(47,91,211,.45); animation:pulse 1.6s infinite; }
+  @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(47,91,211,.45); } 70% { box-shadow:0 0 0 10px rgba(47,91,211,0); } 100% { box-shadow:0 0 0 0 rgba(47,91,211,0); } }
+  .ask-row input { color:var(--fg); }
+  .ask-row input::placeholder { color:var(--muted); }
+  .ask-row button { cursor:pointer; }
+  .turn.enter { animation:enter .45s ease-out; }
+  @keyframes enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .typing i { animation:blink 1s infinite; } .typing i:nth-child(2) { animation-delay:.15s; } .typing i:nth-child(3) { animation-delay:.3s; }
+  @keyframes blink { 0%,80%,100% { opacity:.3; } 40% { opacity:1; } }
+  .story { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); width:min(880px, calc(100% - 32px)); background:#14213d; color:#fff; border-radius:14px; padding:14px 16px; box-shadow:0 10px 30px rgba(0,0,0,.25); display:flex; gap:16px; align-items:center; z-index:10; }
+  .story .step { flex:none; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#f5c84b; }
+  .story .dots { display:flex; gap:5px; margin-top:6px; }
+  .story .dots i { width:22px; height:4px; border-radius:2px; background:rgba(255,255,255,.25); }
+  .story .dots i.on { background:#f5c84b; }
+  .story p { flex:1; font-size:.9rem; line-height:1.45; }
+  .story p b { color:#f5c84b; font-weight:600; }
+  .story .nav { display:flex; gap:6px; flex:none; }
+  .story button { font:inherit; font-size:.82rem; border:1px solid rgba(255,255,255,.3); background:transparent; color:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .story button:hover:not(:disabled) { background:rgba(255,255,255,.12); }
+  .story button:disabled { opacity:.35; cursor:default; }
+  .story button.primary { background:#f5c84b; border-color:#f5c84b; color:#14213d; font-weight:700; }
+  body.shot .story { display:none; }
+  .wrap { padding-bottom:120px; }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns:1fr; } .facet { display:none; }
+    .starters { grid-template-columns:repeat(5,1fr); }
+    .story { flex-wrap:wrap; gap:8px 12px; padding:10px 12px; } .story p { flex-basis:100%; order:3; font-size:.82rem; }
+    .story .nav { margin-left:auto; }
+    .wrap, .banner .inner { padding-left:16px; padding-right:16px; }
+  }
+</style>
+</head>
+<body>
+<header class="banner">
+  <div class="orb" style="width:30px;height:30px;left:68%;top:30px;background:radial-gradient(circle at 35% 35%,#ffb27a,#d9541b)"></div>
+  <div class="orb" style="width:38px;height:38px;left:79%;top:66px;background:radial-gradient(circle at 35% 35%,#a6f08a,#3c9a2a)"></div>
+  <div class="orb" style="width:16px;height:16px;left:60%;top:72px;background:radial-gradient(circle at 35% 35%,#a9c4ff,#3f63c9)"></div>
+  <div class="orb" style="width:10px;height:10px;left:54%;top:24px;background:#e8c53a"></div>
+  <div class="orb" style="width:14px;height:14px;left:84%;top:18px;background:#e25b78"></div>
+  <div class="orb" style="width:18px;height:18px;left:95%;top:80px;background:radial-gradient(circle at 35% 35%,#c5a4ff,#6a2fd6)"></div>
+  <div class="inner">
+    <div class="kicker">A WILD SEARCH APPEARED!</div>
+    <h1>Tall Grass</h1>
+    <p>Find any Pokémon by name, type, generation, or just a question.</p>
+    <div class="pills"><span class="pill"><b>1,025</b> Pokémon</span><span class="pill"><b>18</b> types</span><span class="pill"><b>9</b> generations</span><span class="pill coveo">Powered by <b>Coveo</b></span></div>
+  </div>
+  <svg class="grass" viewBox="0 0 1440 40" preserveAspectRatio="none"><path fill="#3f8f3a" d="M0 40 L0 22 L20 8 L34 24 L52 4 L70 22 L90 10 L108 26 L128 2 L146 20 L166 8 L186 24 L206 6 L224 22 L246 10 L264 26 L284 4 L302 22 L322 10 L342 24 L360 2 L380 20 L400 8 L420 24 L440 6 L458 22 L478 10 L498 26 L518 4 L536 22 L556 8 L576 24 L594 2 L614 20 L634 10 L652 24 L672 6 L692 22 L712 8 L730 26 L750 4 L770 22 L790 10 L808 24 L828 2 L848 20 L868 8 L886 24 L906 6 L926 22 L946 10 L964 26 L984 4 L1004 22 L1024 8 L1042 24 L1062 2 L1082 20 L1100 10 L1120 24 L1140 6 L1160 22 L1180 8 L1198 26 L1218 4 L1238 22 L1256 10 L1276 24 L1296 2 L1316 20 L1334 8 L1354 24 L1374 6 L1394 22 L1414 10 L1440 20 L1440 40 Z"/></svg>
+</header>
+
+<main class="wrap">
+  <div class="search"><input value="fire starters" readonly><button>Search</button></div>
+  <div class="layout">
+    <aside class="facet">
+      <h3>Type</h3>
+      <ul>
+        <li><span class="box"></span><span>Fire</span><span>60</span></li>
+        <li><span class="box"></span><span>Ghost</span><span>8</span></li>
+        <li><span class="box"></span><span>Fighting</span><span>6</span></li>
+        <li><span class="box"></span><span>Bug</span><span>5</span></li>
+        <li><span class="box"></span><span>Poison</span><span>5</span></li>
+        <li><span class="box"></span><span>Flying</span><span>4</span></li>
+        <li><span class="box"></span><span>Water</span><span>4</span></li>
+        <li><span class="box"></span><span>Dark</span><span>3</span></li>
+        <li><span class="box"></span><span>Electric</span><span>3</span></li>
+        <li><span class="box"></span><span>Grass</span><span>3</span></li>
+        <li><span class="box"></span><span>Ground</span><span>3</span></li>
+        <li><span class="box"></span><span>Rock</span><span>3</span></li>
+      </ul>
+    </aside>
+
+    <section class="answer">
+      <div class="answer-header">
+        <h2>Generated answer</h2>
+        <span class="tag">Mock · Search Agent follow-ups</span>
+        <div class="fb"><span>Helpful</span><span>Not helpful</span></div>
+      </div>
+
+      <!-- Turn 1 -->
+      <div class="turn">
+        <div class="a">There are nine Fire-type first partner Pokémon, one introduced in each generation.</div>
+        <div class="starters" id="starters"></div>
+      </div>
+
+      <!-- Turn 2 -->
+      <div class="turn" data-turn="2">
+        <div class="q"><span>which of them is fastest?</span></div>
+        <div class="searched">Searched for <code>fire starter Pokémon base Speed</code><span>· "them" = the nine fire starters</span></div>
+        <div class="a"><b>Litten</b> is the fastest, with a base Speed of <b>70</b>. Scorbunny is a close second at 69, and Fuecoco is the slowest at 36.</div>
+        <ul class="cites">
+          <li><img src="https://img.pokemondb.net/artwork/large/litten.jpg" alt=""><div><a>Litten</a><p>Litten is a Fire type Pokémon introduced in Generation 7. It is known as the Fire Cat Pokémon.</p><div class="cited"><b>Cited</b>Base stats … Speed 70</div></div></li>
+          <li><img src="https://img.pokemondb.net/artwork/large/scorbunny.jpg" alt=""><div><a>Scorbunny</a><p>Scorbunny is a Fire type Pokémon introduced in Generation 8. It is known as the Rabbit Pokémon.</p><div class="cited"><b>Cited</b>Base stats … Speed 69</div></div></li>
+        </ul>
+      </div>
+
+      <!-- Turn 3 -->
+      <div class="turn" data-turn="3">
+        <div class="q"><span>what does it evolve into?</span></div>
+        <div class="searched">Searched for <code>Litten evolution</code><span>· "it" = Litten, from the previous answer</span></div>
+        <div class="a">Litten evolves into <b>Torracat</b> at Level 17, and Torracat evolves into <b>Incineroar</b> at Level 34. Incineroar gains the Dark type and is known as the Heel Pokémon.</div>
+        <div class="evo">
+          <div class="mon"><img src="https://img.pokemondb.net/artwork/large/litten.jpg" alt=""><b>Litten</b>Fire</div>
+          <div class="arrow"><div>→</div>Level 17</div>
+          <div class="mon"><img src="https://img.pokemondb.net/artwork/large/torracat.jpg" alt=""><b>Torracat</b>Fire</div>
+          <div class="arrow"><div>→</div>Level 34</div>
+          <div class="mon"><img src="https://img.pokemondb.net/artwork/large/incineroar.jpg" alt=""><b>Incineroar</b>Fire · Dark</div>
+        </div>
+        <ul class="cites">
+          <li><img src="https://img.pokemondb.net/artwork/large/torracat.jpg" alt=""><div><a>Torracat</a><div class="cited"><b>Cited</b>#0725 Litten Fire (Level 17) #0726 Torracat Fire (Level 34) #0727 Incineroar Fire · Dark</div></div></li>
+        </ul>
+      </div>
+
+      <!-- Waiting state (screenshot 2b) -->
+      <div class="turn" data-turn="typing">
+        <div class="q"><span id="typing-q"></span></div>
+        <div class="searched">Searching…</div>
+        <div class="typing"><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="ask">
+        <div class="chips" id="chips"></div>
+        <div class="ask-row"><input id="ask-input" placeholder="Ask a follow-up…" autocomplete="off"><button id="ask-btn">Ask</button></div>
+        <div class="meta"><span>Answers use only Pokémon pages in this index.</span><span id="turns"></span></div>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="story" id="story">
+  <div><div class="step" id="story-step"></div><div class="dots" id="story-dots"></div></div>
+  <p id="story-text"></p>
+  <div class="nav"><button id="prev">← Back</button><button id="next" class="primary">Next →</button></div>
+</div>
+
+
+<script>
+  const starters = [
+    ["Charmander", 1, 65], ["Cyndaquil", 2, 65], ["Torchic", 3, 45], ["Chimchar", 4, 61], ["Tepig", 5, 45],
+    ["Fennekin", 6, 60], ["Litten", 7, 70], ["Scorbunny", 8, 69], ["Fuecoco", 9, 36],
+  ];
+  // The scripted conversation. Each step is one turn; the highlighted chip is the question that leads to the next.
+  const steps = [
+    { turn: 1, next: "which of them is fastest?",
+      chips: ["which of them is fastest?", "which is strongest?", "which ones are dual type?"],
+      label: "Turn 1 · First answer",
+      text: "The shopper searches <b>fire starters</b>. The agent searches the index and answers with citations, the same as RGA today. It also returns a <b>conversation token</b>, so follow-ups can continue the conversation." },
+    { turn: 2, next: "what does it evolve into?",
+      chips: ["what does it evolve into?", "how does it compare to Scorbunny?", "what is it weak to?"],
+      label: "Turn 2 · Follow-up",
+      text: "<b>“which of them is fastest?”</b> on its own would mean nothing to plain RGA. The agent works out that “them” means the nine starters, runs a <b>new Coveo search</b>, and answers from the base Speed stats." },
+    { turn: 3, next: null,
+      chips: ["what moves does Incineroar learn?", "show the other Gen 7 starters", "is Incineroar good against Psychic types?"],
+      label: "Turn 3 · Follow-up",
+      text: "<b>“it”</b> now means Litten, from the previous answer. Every turn is a fresh search grounded in the index, with its own citations, for up to <b>15 turns</b> per conversation." },
+  ];
+  const $ = (id) => document.getElementById(id);
+  let step = 0;      // index into steps
+  let busy = false;  // while a follow-up is "loading"
+
+  function renderStarters(n) {
+    $("starters").innerHTML = starters.map(([name, gen, spd]) => `
+      <div class="starter${n >= 2 && name === "Litten" ? " hi" : ""}">
+        <img src="https://img.pokemondb.net/artwork/large/${name.toLowerCase()}.jpg" alt="">
+        <b>${name}</b><small>Gen ${gen}${n >= 2 ? ` · Spd ${spd}` : ""}</small>
+        ${n >= 2 ? `<div class="speed"><i style="width:${(spd / 70) * 100}%"></i></div>` : ""}
+      </div>`).join("");
+  }
+
+  function render({ typing = null, animate = false } = {}) {
+    const s = steps[step];
+    renderStarters(s.turn);
+    for (const el of document.querySelectorAll("[data-turn]")) {
+      const t = el.dataset.turn;
+      const show = t === "typing" ? typing !== null : Number(t) <= s.turn;
+      el.style.display = show ? "block" : "none";
+      el.classList.toggle("enter", animate && show && (t === "typing" || Number(t) === s.turn));
+    }
+    if (typing !== null) $("typing-q").textContent = typing;
+    $("chips").innerHTML = typing !== null ? "" : s.chips
+      .map((c) => `<span class="${c === s.next ? "next" : ""}" data-q="${c}">${c}</span>`).join("");
+    $("turns").textContent = `Conversation · turn ${typing !== null ? s.turn + 1 : s.turn} of 15`;
+    // Storyboard bar
+    $("story-step").textContent = typing !== null ? steps[step + 1].label : s.label;
+    $("story-text").innerHTML = typing !== null
+      ? `The follow-up goes to the agent's <b>/follow-up</b> endpoint with the conversation ID and token. The agent rewrites the question with the conversation so far, then searches.`
+      : s.text;
+    $("story-dots").innerHTML = steps.map((_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("");
+    $("prev").disabled = step === 0 || busy;
+    $("next").disabled = busy;
+    $("next").textContent = s.next ? "Next →" : "Restart ↺";
+  }
+
+  async function typeInto(input, text) {
+    input.value = "";
+    for (const ch of text) { input.value += ch; await new Promise((r) => setTimeout(r, 28)); }
+  }
+
+  async function ask(question) {
+    const s = steps[step];
+    if (busy || !s.next) return;
+    if (question.trim().toLowerCase() !== s.next) {
+      // Off-script question: nudge toward the scripted one.
+      const input = $("ask-input");
+      input.value = "";
+      input.placeholder = `This storyboard is scripted. Try: “${s.next}”`;
+      document.querySelector(".chips .next")?.focus();
+      return;
+    }
+    busy = true;
+    await typeInto($("ask-input"), s.next);
+    await new Promise((r) => setTimeout(r, 250));
+    $("ask-input").value = "";
+    render({ typing: s.next, animate: true });
+    document.querySelector('[data-turn="typing"]').scrollIntoView({ behavior: "smooth", block: "center" });
+    await new Promise((r) => setTimeout(r, 1400));
+    step += 1;
+    busy = false;
+    render({ animate: true });
+    document.querySelector(`[data-turn="${steps[step].turn}"]`).scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function go(to) {
+    if (busy) return;
+    step = Math.max(0, Math.min(steps.length - 1, to));
+    $("ask-input").value = "";
+    $("ask-input").placeholder = "Ask a follow-up…";
+    render();
+    if (step === 0) window.scrollTo({ top: 0, behavior: "smooth" });
+    else document.querySelector(`[data-turn="${steps[step].turn}"]`).scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  $("chips").addEventListener("click", (e) => { const q = e.target.closest("[data-q]")?.dataset.q; if (q) ask(q); });
+  $("ask-btn").addEventListener("click", () => ask($("ask-input").value || steps[step].next || ""));
+  $("ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter") ask(e.target.value); });
+  $("next").addEventListener("click", () => (steps[step].next ? ask(steps[step].next) : go(0)));
+  $("prev").addEventListener("click", () => go(step - 1));
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowRight") steps[step].next ? ask(steps[step].next) : go(0);
+    if (e.key === "ArrowLeft") go(step - 1);
+  });
+
+  // Static states for screenshots: ?turn=1|2|3|typing hides the storyboard bar.
+  const fixed = new URLSearchParams(location.search).get("turn");
+  if (fixed) {
+    document.body.classList.add("shot");
+    if (fixed === "typing") { step = 0; render({ typing: steps[0].next }); }
+    else { step = Math.max(0, Math.min(2, Number(fixed) - 1)); render(); }
+  } else {
+    render();
+  }
+</script>
+</body>
+</html>
