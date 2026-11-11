@@ -7,6 +7,7 @@ import {
   buildGeneratedAnswer,
   buildPager,
   buildQuerySummary,
+  buildRedirectionTrigger,
   buildResultList,
   buildSearchBox,
   buildSearchEngine,
@@ -43,6 +44,7 @@ export function SearchPage() {
       }),
       summary: buildQuerySummary(engine),
       pager: buildPager(engine),
+      redirect: buildRedirectionTrigger(engine),
     };
   }, []);
 
@@ -69,6 +71,19 @@ export function SearchPage() {
       window.removeEventListener("hashchange", onHashChange);
     };
   }, [c]);
+
+  // Redirect triggers from the query pipeline (e.g. "type chart" → pokemondb.net/type). Drop the query from the URL
+  // first, so the browser's Back button returns to an empty search instead of redirecting again.
+  useEffect(
+    () =>
+      c.redirect.subscribe(() => {
+        const to = c.redirect.state.redirectTo;
+        if (!to) return;
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+        window.location.assign(to);
+      }),
+    [c],
+  );
 
   return (
     <div className="layout">
