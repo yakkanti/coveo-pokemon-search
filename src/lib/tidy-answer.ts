@@ -61,7 +61,8 @@ export function tidyAnswer(markdown: string): string {
 
   // 2. Sections. Several sub-headings after the intro mean the answer is a list of items written as sections.
   const firstContent = body.findIndex((line) => line.trim() !== "");
-  const headingIdx = body.map((line, i) => (HEADING.test(line) ? i : -1)).filter((i) => i > firstContent);
+  // Include a heading on the first content line: RGA sometimes skips the intro and starts with "### Articuno".
+  const headingIdx = body.map((line, i) => (HEADING.test(line) ? i : -1)).filter((i) => i >= firstContent && i !== -1);
   let section: string[];
   if (headingIdx.length >= 2) {
     const intro = body.slice(0, headingIdx[0]).filter((line) => !BOLD_LABEL.test(line));
