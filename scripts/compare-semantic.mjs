@@ -1,11 +1,14 @@
-// Side-by-side relevance check: the same queries with and without the Semantic Encoder.
+// Side-by-side relevance check: the same queries under two request contexts, A and B.
 //
-// The PokemonSearch pipeline associates the Semantic Encoder with the condition
-//   Search Hub is PokemonSearch AND Context[semantic] is not "off"
-// so a request carrying context { semantic: "off" } runs keyword-only, with everything else identical.
+// Pipeline rules can be conditioned on a context value, so one request can switch a rule or model on or off
+// while everything else stays identical:
+//   - the Semantic Encoder association: Context[semantic] is not "off"
+//   - the tuned ranking weights rule:   Context[weights] is "tuned"
 //
-//   npm run compare-semantic             # prints a summary table
-//   npm run compare-semantic -- --top 5  # also prints each query's top results side by side
+//   npm run compare-semantic                                   # A = default, B = semantic=off
+//   npm run compare-semantic -- --top 5                        # also print each query's top results
+//   npm run compare-semantic -- --b weights=tuned              # default vs tuned ranking weights
+//   npm run compare-semantic -- --a semantic=off --b semantic=off,weights=tuned   # same, keyword-only
 //
 // Each query has the Pokémon a good result list should rank highly. "Best rank" is the position of the first
 // of them in the top 10 (lower is better); "hit@3" counts how many expected Pokémon land in the top 3.
@@ -20,6 +23,14 @@ const env = Object.fromEntries(
 const ORG = env.NEXT_PUBLIC_COVEO_ORG_ID;
 const KEY = env.NEXT_PUBLIC_COVEO_API_KEY;
 const HUB = env.NEXT_PUBLIC_COVEO_SEARCH_HUB || "PokemonSearch";
+const contextArg = (flag, fallback) => {
+  const i = process.argv.indexOf(flag);
+  const raw = i === -1 ? fallback : process.argv[i + 1] ?? "";
+  return Object.fromEntries(raw.split(",").filter(Boolean).map((kv) => kv.split("=")));
+};
+const CTX_A = contextArg("--a", "");
+const CTX_B = contextArg("--b", "semantic=off");
+const label = (ctx) => (Object.keys(ctx).length ? Object.entries(ctx).map(([k, v]) => `${k}=${v}`).join(",") : "default");
 const SHOW_TOP = (() => {
   const i = process.argv.indexOf("--top");
   return i === -1 ? 0 : Number(process.argv[i + 1] ?? 5);
@@ -49,7 +60,7 @@ const QUERIES = [
   ["what does charmander evolve into", "question", ["Charmeleon", "Charmander", "Charizard"]],
 ];
 
-async function search(q, semanticOff) {
+async function search(q, context) {
   const res = await fetch(`https://${ORG}.org.coveo.com/rest/search/v2`, {
     method: "POST",
     headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
@@ -59,7 +70,7 @@ async function search(q, semanticOff) {
       numberOfResults: 10,
       maximumAge: 0,
       fieldsToInclude: ["pokemon_name"],
-      ...(semanticOff ? { context: { semantic: "off" } } : {}),
+      ...(Object.keys(context).length ? { context } : {}),
     }),
   });
   if (!res.ok) throw new Error(`Search API ${res.status} for "${q}"`);
@@ -78,16 +89,16 @@ const fmtRank = (r) => (r === null ? "–" : String(r));
 
 const rows = [];
 for (const [q, kind, expected] of QUERIES) {
-  const [on, off] = await Promise.all([search(q, false), search(q, true)]);
+  const [on, off] = await Promise.all([search(q, CTX_A), search(q, CTX_B)]);
   rows.push({ q, kind, expected, on, off, rOn: bestRank(on.names, expected), rOff: bestRank(off.names, expected) });
 }
 
-console.log(`\nSemantic Encoder on vs off · pipeline via hub ${HUB} · top 10 per query\n`);
+console.log(`\nA = ${label(CTX_A)}  vs  B = ${label(CTX_B)} · hub ${HUB} · top 10 per query\n`);
 console.log(
-  pad("query", 40) + pad("kind", 13) + pad("count on/off", 15) + pad("best rank on/off", 18) + pad("hit@3 on/off", 14) + "top-10 overlap",
+  pad("query", 40) + pad("kind", 13) + pad("count A/B", 15) + pad("best rank A/B", 18) + pad("hit@3 A/B", 14) + "top-10 overlap",
 );
 for (const r of rows) {
-  const verdict = r.rOn === r.rOff ? "" : (r.rOn ?? 99) < (r.rOff ?? 99) ? "  ← semantic better" : "  ← keyword better";
+  const verdict = r.rOn === r.rOff ? "" : (r.rOn ?? 99) < (r.rOff ?? 99) ? "  ← A better" : "  ← B better";
   console.log(
     pad(r.q, 40) +
       pad(r.kind, 13) +
@@ -104,9 +115,9 @@ const mrr = (list, key) => list.reduce((s, r) => s + (r[key] ? 1 / r[key] : 0), 
 console.log("\nMRR by query kind (higher is better):");
 for (const kind of [...new Set(rows.map((r) => r.kind))]) {
   const list = rows.filter((r) => r.kind === kind);
-  console.log(`  ${pad(kind, 13)} on ${mrr(list, "rOn").toFixed(2)}   off ${mrr(list, "rOff").toFixed(2)}   (${list.length} queries)`);
+  console.log(`  ${pad(kind, 13)} A ${mrr(list, "rOn").toFixed(2)}   B ${mrr(list, "rOff").toFixed(2)}   (${list.length} queries)`);
 }
-console.log(`  ${pad("all", 13)} on ${mrr(rows, "rOn").toFixed(2)}   off ${mrr(rows, "rOff").toFixed(2)}`);
+console.log(`  ${pad("all", 13)} A ${mrr(rows, "rOn").toFixed(2)}   B ${mrr(rows, "rOff").toFixed(2)}`);
 
 if (SHOW_TOP) {
   for (const r of rows) {
@@ -117,5 +128,5 @@ if (SHOW_TOP) {
       console.log(`  ${i + 1}. ${mark(a)}${pad(a, 22)} ${mark(b)}${b}`);
     }
   }
-  console.log("\n(* = expected Pokémon; left = semantic on, right = off)");
+  console.log(`\n(* = expected Pokémon; left = A ${label(CTX_A)}, right = B ${label(CTX_B)})`);
 }
